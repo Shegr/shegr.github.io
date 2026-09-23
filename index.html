@@ -9,7 +9,7 @@
   :root{
     --bg:#14161c; --bg2:#1b1e27; --bg3:#232734;
     --line:#2e3342; --txt:#e6e8ef; --muted:#98a0b3;
-    --accent:#ffd166; --green:#22c55e; --blue:#5aa9ff;
+    --accent:#ffd166; --green:#22c55e; --blue:#5aa9ff; --warn:#ff9f43;
   }
   *{box-sizing:border-box}
   body{
@@ -62,7 +62,6 @@
   }
   .sheet-note{color:var(--muted); font-size:12.5px; margin:0 0 14px}
 
-  /* Двухколоночный layout */
   .layout{
     display:grid;
     grid-template-columns: minmax(0,1fr) 300px;
@@ -95,21 +94,15 @@
   }
   table.plan tbody tr:hover{background:#1f2330}
 
-  /* Зачёркиваем только колонку «Действие» (3-й столбец — после маркера и чекбокса) */
+  /* «Действие» (3-й столбец) */
   table.plan tr.done td:nth-child(3){
     opacity:.45;
     text-decoration: line-through;
     text-decoration-color: rgba(150,150,150,.6);
     transition: opacity .2s, text-decoration-color .2s;
   }
-  /* «Трата золота» (4-й) — приглушаем, но не зачёркиваем */
-  table.plan tr.done td:nth-child(4){
-    opacity:.55;
-  }
-  /* «Уточнение» (5-й) — остаётся полностью видимым */
-  table.plan tr.done td:nth-child(5){
-    opacity:1;
-  }
+  table.plan tr.done td:nth-child(4){opacity:.55}
+  table.plan tr.done td:nth-child(5){opacity:1}
 
   table.plan td.gold{color:var(--accent); font-weight:600; white-space:nowrap; width:70px}
   table.plan td.note{color:var(--muted); font-size:12.5px}
@@ -243,6 +236,8 @@
     transition: transform .1s, background .15s, border-color .15s, color .15s;
   }
   .selection-bar button:hover{transform:scale(1.08)}
+
+  /* ✅ отметить выделенные */
   .selection-bar button.apply{
     color: var(--green);
     border-color: rgba(34,197,94,.55);
@@ -250,12 +245,13 @@
   .selection-bar button.apply:hover{
     background: rgba(34,197,94,.15);
   }
-  .selection-bar button.clear-sel{
-    color:#ff7b7b;
-    border-color: rgba(255,123,123,.55);
+  /* ✕ снять галочки с выделенных */
+  .selection-bar button.uncheck{
+    color: var(--warn);
+    border-color: rgba(255,159,67,.55);
   }
-  .selection-bar button.clear-sel:hover{
-    background: rgba(255,123,123,.15);
+  .selection-bar button.uncheck:hover{
+    background: rgba(255,159,67,.15);
   }
 
   @media (max-width:1100px){
@@ -292,8 +288,8 @@
 <!-- Плавающая панель действий (появляется при выделении строк) -->
 <div class="selection-bar" id="selectionBar">
   <span class="count" id="selectionCount">Выделено: 0</span>
-  <button class="apply"     id="btnApply"    title="Отметить выделенные">✅</button>
-  <button class="clear-sel" id="btnClearSel" title="Снять выделение">✕</button>
+  <button class="apply"   id="btnApply"   title="Отметить выделенные">✅</button>
+  <button class="uncheck" id="btnUncheck" title="Снять галочки с выделенных">✕</button>
 </div>
 
 <main id="content"></main>
@@ -1148,7 +1144,7 @@ function bindReset(){
 const selectionBar   = document.getElementById('selectionBar');
 const selectionCount = document.getElementById('selectionCount');
 const btnApply       = document.getElementById('btnApply');
-const btnClearSel    = document.getElementById('btnClearSel');
+const btnUncheck     = document.getElementById('btnUncheck');
 
 /* Тап по маркеру → выделить все строки до этой включительно.
    Повторный тап по последнему выделенному → снять выделение. */
@@ -1184,7 +1180,7 @@ function updateSelectionBar(){
   selectionBar.classList.toggle('visible', n > 0);
 }
 
-/* ✅ — отметить выделенные */
+/* ✅ — поставить галочки на выделенных */
 btnApply.addEventListener('click', ()=>{
   const selected = Array.from(document.querySelectorAll('table.plan tbody tr.selected'));
   if(!selected.length) return;
@@ -1205,10 +1201,23 @@ btnApply.addEventListener('click', ()=>{
   updateSelectionBar();
 });
 
-/* ✕ — снять выделение, галочки не трогаем */
-btnClearSel.addEventListener('click', ()=>{
-  document.querySelectorAll('table.plan tbody tr.selected')
-    .forEach(tr => tr.classList.remove('selected'));
+/* ✕ — снять галочки с выделенных, подсветку тоже убираем */
+btnUncheck.addEventListener('click', ()=>{
+  const selected = Array.from(document.querySelectorAll('table.plan tbody tr.selected'));
+  if(!selected.length) return;
+
+  const sheetId = selected[0].closest('table.plan').dataset.sheet;
+
+  selected.forEach(tr=>{
+    const cb = tr.querySelector('input[type=checkbox]');
+    if(!cb) return;
+    cb.checked = false;
+    localStorage.removeItem('travian_chk_' + tr.dataset.key);
+    tr.classList.remove('done');
+  });
+
+  updateProgress(sheetId);
+  selected.forEach(tr => tr.classList.remove('selected'));
   updateSelectionBar();
 });
 
