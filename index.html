@@ -94,7 +94,21 @@
     position:sticky; top:0; z-index:2;
   }
   table.plan tbody tr:hover{background:#1f2330}
-  table.plan tr.done td:not(:first-child){opacity:.45; text-decoration:line-through}
+  /* Зачёркиваем только колонку «Действие» (2-й столбец) */
+  table.plan tr.done td:nth-child(2){
+    opacity:.45;
+    text-decoration: line-through;
+    text-decoration-color: rgba(150,150,150,.6);
+    transition: opacity .2s, text-decoration-color .2s;
+  }
+  /* Колонку «Трата золота» слегка приглушаем, но НЕ зачёркиваем */
+  table.plan tr.done td:nth-child(3){
+    opacity:.55;
+  }
+  /* Колонка «Уточнение» остаётся полностью видимой */
+  table.plan tr.done td:nth-child(4){
+    opacity:1;
+  }
   table.plan td.gold{color:var(--accent); font-weight:600; white-space:nowrap; width:70px}
   table.plan td.note{color:var(--muted); font-size:12.5px}
   table.plan td.chk{width:34px; text-align:center}
