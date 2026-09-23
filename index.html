@@ -53,7 +53,7 @@
   }
 
   /* ── ОСНОВНОЙ КОНТЕНТ ─────────────────────────────────────── */
-  main{padding:18px 22px 60px}
+  main{padding:18px 22px 120px}
   .sheet{display:none}
   .sheet.active{display:block}
 
@@ -62,7 +62,7 @@
   }
   .sheet-note{color:var(--muted); font-size:12.5px; margin:0 0 14px}
 
-  /* Двухколоночный layout: слева таблица, справа карточки */
+  /* Двухколоночный layout */
   .layout{
     display:grid;
     grid-template-columns: minmax(0,1fr) 300px;
@@ -94,31 +94,58 @@
     position:sticky; top:0; z-index:2;
   }
   table.plan tbody tr:hover{background:#1f2330}
-  /* Зачёркиваем только колонку «Действие» (2-й столбец) */
-  table.plan tr.done td:nth-child(2){
+
+  /* Зачёркиваем только колонку «Действие» (3-й столбец — после маркера и чекбокса) */
+  table.plan tr.done td:nth-child(3){
     opacity:.45;
     text-decoration: line-through;
     text-decoration-color: rgba(150,150,150,.6);
     transition: opacity .2s, text-decoration-color .2s;
   }
-  /* Колонку «Трата золота» слегка приглушаем, но НЕ зачёркиваем */
-  table.plan tr.done td:nth-child(3){
+  /* «Трата золота» (4-й) — приглушаем, но не зачёркиваем */
+  table.plan tr.done td:nth-child(4){
     opacity:.55;
   }
-  /* Колонка «Уточнение» остаётся полностью видимой */
-  table.plan tr.done td:nth-child(4){
+  /* «Уточнение» (5-й) — остаётся полностью видимым */
+  table.plan tr.done td:nth-child(5){
     opacity:1;
   }
+
   table.plan td.gold{color:var(--accent); font-weight:600; white-space:nowrap; width:70px}
   table.plan td.note{color:var(--muted); font-size:12.5px}
   table.plan td.chk{width:34px; text-align:center}
+
+  /* ── МАРКЕР ВЫДЕЛЕНИЯ ─────────────────────────────────────── */
+  table.plan th.marker{width:22px}
+  table.plan td.marker{
+    width:22px;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    color:var(--muted);
+    font-size:11px;
+    opacity:.45;
+    transition: opacity .15s, color .15s, background .15s;
+    padding-left:4px; padding-right:2px;
+  }
+  table.plan tbody tr:hover td.marker{opacity:1}
+  table.plan tbody tr.selected{
+    background: rgba(90,169,255,.14);
+    box-shadow: inset 3px 0 0 var(--blue);
+  }
+  table.plan tbody tr.selected td.marker{
+    opacity:1; color:var(--blue);
+  }
+  table.plan tbody tr.selected td:nth-child(3){
+    color:#fff;
+  }
 
   input[type=checkbox]{
     width:16px; height:16px; cursor:pointer; accent-color:var(--green);
     vertical-align:middle;
   }
 
-  /* ── БОКОВАЯ КОЛОНКА: тянется по всей длине таблицы ───────── */
+  /* ── БОКОВАЯ КОЛОНКА ──────────────────────────────────────── */
   .side{
     display:flex; flex-direction:column; gap:14px;
     align-self: stretch;
@@ -169,12 +196,84 @@
   }
   .btn-reset:hover{color:#ff7b7b; border-color:#ff7b7b}
 
+  /* ── ПЛАВАЮЩАЯ ПАНЕЛЬ ДЕЙСТВИЙ ────────────────────────────── */
+  .selection-bar{
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%) translateY(140%);
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.9);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 100;
+    transition: transform .2s ease, opacity .2s ease;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .selection-bar.visible{
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .selection-bar .count{
+    font-size:12.5px;
+    color:var(--muted);
+    padding-right:6px;
+    border-right:1px solid var(--line);
+    margin-right:2px;
+    white-space:nowrap;
+  }
+  .selection-bar button{
+    width:42px; height:42px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--bg3);
+    color:var(--txt);
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    transition: transform .1s, background .15s, border-color .15s, color .15s;
+  }
+  .selection-bar button:hover{transform:scale(1.08)}
+  .selection-bar button.apply{
+    color: var(--green);
+    border-color: rgba(34,197,94,.55);
+  }
+  .selection-bar button.apply:hover{
+    background: rgba(34,197,94,.15);
+  }
+  .selection-bar button.clear-sel{
+    color:#ff7b7b;
+    border-color: rgba(255,123,123,.55);
+  }
+  .selection-bar button.clear-sel:hover{
+    background: rgba(255,123,123,.15);
+  }
+
   @media (max-width:1100px){
     .side{
       position: static;
       height: auto;
       max-height: none;
       overflow: visible;
+    }
+    main{padding-bottom: 160px}
+    .selection-bar{
+      bottom: 14px;
+      padding: 6px 10px;
+      gap: 8px;
+    }
+    .selection-bar button{
+      width: 46px; height: 46px;
+      font-size: 22px;
     }
   }
 </style>
@@ -188,6 +287,13 @@
     <div class="sub">Отмечайте выполненные пункты — прогресс сохраняется автоматически в браузере.</div>
   </header>
   <div class="tabs" id="tabs"></div>
+</div>
+
+<!-- Плавающая панель действий (появляется при выделении строк) -->
+<div class="selection-bar" id="selectionBar">
+  <span class="count" id="selectionCount">Выделено: 0</span>
+  <button class="apply"     id="btnApply"    title="Отметить выделенные">✅</button>
+  <button class="clear-sel" id="btnClearSel" title="Снять выделение">✕</button>
 </div>
 
 <main id="content"></main>
@@ -938,6 +1044,7 @@ function renderSheet(sheet, idx){
           <table class="plan" data-sheet="${sheet.id}">
             <thead>
               <tr>
+                <th class="marker"></th>
                 <th class="chk">✅</th>
                 <th>Действие</th>
                 <th>Трата золота</th>
@@ -947,6 +1054,7 @@ function renderSheet(sheet, idx){
             <tbody>
               ${sheet.plan.map((row,i)=>`
                 <tr data-key="${sheet.id}_${i}">
+                  <td class="marker" title="Выделить до этой строки">▸</td>
                   <td class="chk"><input type="checkbox"></td>
                   <td>${row.act}</td>
                   <td class="gold">${row.gold||''}</td>
@@ -1022,14 +1130,87 @@ function bindReset(){
         const cb = tr.querySelector('input[type=checkbox]');
         cb.checked = false;
         tr.classList.remove('done');
+        tr.classList.remove('selected');
         localStorage.removeItem('travian_chk_' + tr.dataset.key);
       });
       localStorage.removeItem('travian_scroll_' + id);
       updateProgress(id);
       window.scrollTo({ top: 0, behavior: 'auto' });
+      updateSelectionBar();
     });
   });
 }
+
+/* ============================================================
+   ВЫДЕЛЕНИЕ СТРОК И МАССОВЫЕ ДЕЙСТВИЯ
+   ============================================================ */
+
+const selectionBar   = document.getElementById('selectionBar');
+const selectionCount = document.getElementById('selectionCount');
+const btnApply       = document.getElementById('btnApply');
+const btnClearSel    = document.getElementById('btnClearSel');
+
+/* Тап по маркеру → выделить все строки до этой включительно.
+   Повторный тап по последнему выделенному → снять выделение. */
+document.addEventListener('click', (e)=>{
+  const marker = e.target.closest('td.marker');
+  if(!marker) return;
+
+  const tr = marker.closest('tr');
+  const table = tr.closest('table.plan');
+  if(!table) return;
+
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+  const idx  = rows.indexOf(tr);
+
+  // если это уже крайняя выделенная — снять выделение
+  const lastSelectedIdx = rows.reduce((acc,r,i)=> r.classList.contains('selected') ? i : acc, -1);
+  if(idx === lastSelectedIdx){
+    rows.forEach(r => r.classList.remove('selected'));
+    updateSelectionBar();
+    return;
+  }
+
+  // выделяем всё до idx включительно
+  rows.forEach((r,i)=>{
+    r.classList.toggle('selected', i <= idx);
+  });
+  updateSelectionBar();
+});
+
+function updateSelectionBar(){
+  const n = document.querySelectorAll('table.plan tbody tr.selected').length;
+  selectionCount.textContent = 'Выделено: ' + n;
+  selectionBar.classList.toggle('visible', n > 0);
+}
+
+/* ✅ — отметить выделенные */
+btnApply.addEventListener('click', ()=>{
+  const selected = Array.from(document.querySelectorAll('table.plan tbody tr.selected'));
+  if(!selected.length) return;
+
+  const sheetId = selected[0].closest('table.plan').dataset.sheet;
+
+  selected.forEach(tr=>{
+    const cb = tr.querySelector('input[type=checkbox]');
+    if(!cb || cb.checked) return;
+    cb.checked = true;
+    localStorage.setItem('travian_chk_' + tr.dataset.key, '1');
+    tr.classList.add('done');
+  });
+
+  updateProgress(sheetId);
+  // после применения — снимаем подсветку
+  selected.forEach(tr => tr.classList.remove('selected'));
+  updateSelectionBar();
+});
+
+/* ✕ — снять выделение, галочки не трогаем */
+btnClearSel.addEventListener('click', ()=>{
+  document.querySelectorAll('table.plan tbody tr.selected')
+    .forEach(tr => tr.classList.remove('selected'));
+  updateSelectionBar();
+});
 
 /* init */
 SHEETS.forEach(renderSheet);
