@@ -968,9 +968,10 @@ function renderSheet(sheet, idx){
   contentEl.appendChild(el);
 }
 
-function activate(id){
+function activate(id, save=true){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.id===id));
   document.querySelectorAll('.sheet').forEach(s=>s.classList.toggle('active', s.id==='sheet-'+id));
+  if(save) localStorage.setItem('travian_active_tab', id);
 }
 
 function bindCheckboxes(root){
@@ -1009,7 +1010,9 @@ function bindReset(){
         tr.classList.remove('done');
         localStorage.removeItem('travian_chk_' + tr.dataset.key);
       });
+      localStorage.removeItem('travian_scroll_' + id);
       updateProgress(id);
+      window.scrollTo({ top: 0, behavior: 'auto' });
     });
   });
 }
@@ -1019,6 +1022,27 @@ SHEETS.forEach(renderSheet);
 bindCheckboxes(document);
 SHEETS.forEach(s=>updateProgress(s.id));
 bindReset();
+
+/* ——— восстановление последней активной вкладки ——— */
+const savedTab = localStorage.getItem('travian_active_tab');
+if(savedTab && document.getElementById('sheet-' + savedTab)){
+  activate(savedTab, false);
+}
+
+/* ——— при открытии — прыжок к первой невыполненной строке ——— */
+window.addEventListener('load', ()=>{
+  const activeTab = localStorage.getItem('travian_active_tab') || 'egypt';
+  const table = document.querySelector(`table.plan[data-sheet="${activeTab}"]`);
+  if(!table) return;
+
+  const firstUnchecked = table.querySelector('tbody tr:not(.done)');
+  if(firstUnchecked){
+    setTimeout(()=>{
+      const top = firstUnchecked.getBoundingClientRect().top + window.scrollY - 160;
+      window.scrollTo({ top, behavior: 'auto' });
+    }, 80);
+  }
+});
 </script>
 
 </body>
